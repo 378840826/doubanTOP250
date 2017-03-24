@@ -12,7 +12,7 @@ const log = function() {
 }
 
 //需要用到三个库()
-//用于下载网页的 request 库
+//用于下载网页的 sync-request 库
 var request = require('sync-request')
 //用于解析网页数据的 cherrio 库
 // cherrio 语法类似于 jQuery
@@ -70,16 +70,16 @@ var cached_url = function(url) {
     var fa = require('fs')
     //判断文件是否已存在，不存在就下载，已存在就读取
     //定义一个文件名 path,用 url 后面部分来命名
-    var path = url.split('?')[1]+'.html'
+    var path = url.split('?')[1] + '.html'
     // fs.statSync() 检查文件是否存在
     var exists = fs.existsSync(path)
     if (exists) {
         //如果存在,就读取
-        var data = fa.readFileSync(path)
+        var data = fs.readFileSync(path)
         //返回 body
         return data
     } else {
-        //引入用于下载网页的 request 库，和用于解析网页数据的 cherrio 库
+        //引入用于下载网页的 sync-request 库，和用于解析网页数据的 cherrio 库
         var request = require('sync-request')
         // cherrio 语法类似于 jQuery
         //var cheerio = require('cheerio')
@@ -137,6 +137,28 @@ var saveMovies = function(movies) {
 }
 
 
+//新增下载封面图
+var downloadCovers = function(movies) {
+    //用于下载的 request 库，小区别于 sync-request
+    //用于文件操作的 fs 库
+    var request = require('request')
+    var fs = require('fs')
+    for (var i = 0; i < movies.length; i++) {
+        var m = movies[i]
+        var url = m.coverUrl
+        var path = m.name.split('/')[0]
+        var path1 = 'imges'
+        var path2 = path1 + '/' + path + '.jpg'
+        //创建一个文件夹
+        fs.mkdir(path1,function(err) {
+            
+        })
+        //下载图片并保存的套路
+        request(url).pipe(fs.createWriteStream(path2))
+    }
+}
+
+
 //主函数
 const __main = function() {
     //top250 共有 10 个页面,一个页面 25 个数据，找出规律循环 10 次
@@ -154,6 +176,8 @@ const __main = function() {
     }
     //用 saveMovies 保存数据
     saveMovies(movies)
+    //下载封面图片并保存
+    downloadCovers(movies)
 }
 //程序入口
 __main()
