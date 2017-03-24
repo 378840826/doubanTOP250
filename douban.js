@@ -6,10 +6,10 @@
 4，保存数据
 */
 
-//定义 log 函数
-const log = function() {
-    console.log.apply(console, arguments)
-}
+//引入自定义库中的 log 函数
+var log = require('./utils').log
+//引入自定义库中的 cached_url 函数
+var cached_url = require('./utils').cached_url
 
 //需要用到三个库()
 //用于下载网页的 sync-request 库
@@ -64,38 +64,6 @@ var moviesFromDiv = function(div) {
 }
 
 
-//缓存网页数据以便多次使用的时候不再重复下载
-var cached_url = function(url) {
-    //引入 fs 模块
-    var fa = require('fs')
-    //判断文件是否已存在，不存在就下载，已存在就读取
-    //定义一个文件名 path,用 url 后面部分来命名
-    var path = url.split('?')[1] + '.html'
-    // fs.statSync() 检查文件是否存在
-    var exists = fs.existsSync(path)
-    if (exists) {
-        //如果存在,就读取
-        var data = fs.readFileSync(path)
-        //返回 body
-        return data
-    } else {
-        //引入用于下载网页的 sync-request 库，和用于解析网页数据的 cherrio 库
-        var request = require('sync-request')
-        // cherrio 语法类似于 jQuery
-        //var cheerio = require('cheerio')
-        //套路，用'GET'方法获取 URL 的内容，相当于在浏览器中输入 url 获得的内容
-        //r 相当于发送一个 http 请求后返回的对象
-        var r = request('GET', url)
-        //用 request 库的 getBody 方法得到 http请求的 body(也就是整个html)
-        //也就是 http 请求结果的 Response，参数是指定编码
-        var body = r.getBody('utf-8')
-        //把下载的内容写入缓存文件
-        fs.writeFileSync(path, body)
-        //返回 body
-        return body
-    }
-}
-
 
 //下载和解析网页数据的函数
 var moviesFromUrl = function(url) {
@@ -122,20 +90,6 @@ var moviesFromUrl = function(url) {
 }
 
 
-//保存信息至文件的函数
-var saveMovies = function(movies) {
-    //把数组参数 movies 转成 JSON 格式
-    //JSON.stringily 的第 2、3 个参数是用来让生成的数据带有缩进
-    //第三个参数指定缩进的空格数，建议当作套路使用
-    var s = JSON.stringify(movies, null, 2)
-    //引入用于文件操作的 fs 模块
-    var fs = require('fs')
-    //创建用于保存数据的文件
-    var path = 'douban.txt'
-    //用 fs 模块写入数据，第一个参数是文件名，第二个参数是要写入的内容
-    fs.writeFileSync(path, s)
-}
-
 
 //新增下载封面图
 var downloadCovers = function(movies) {
@@ -151,7 +105,7 @@ var downloadCovers = function(movies) {
         var path2 = path1 + '/' + path + '.jpg'
         //创建一个文件夹
         fs.mkdir(path1,function(err) {
-            
+
         })
         //下载图片并保存的套路
         request(url).pipe(fs.createWriteStream(path2))
@@ -174,8 +128,11 @@ const __main = function() {
         //concat 是连接两个数组成一个数组
         movies = movies.concat(ms)
     }
-    //用 saveMovies 保存数据
-    saveMovies(movies)
+
+    //引入自己的定义的模块
+    var utils = require('./utils')
+    //用自定义库的 save 方法保存数据
+    utils.save('电影.json', movies)
     //下载封面图片并保存
     downloadCovers(movies)
 }
