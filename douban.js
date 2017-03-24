@@ -58,23 +58,50 @@ var moviesFromDiv = function(div) {
     var pic = e('.pic')
     movie.ranking = pic.find('em').text()
     movie.coverUrl = pic.find('img').attr('src')
-
+    //添加评论人数数据
+    movie.ratings = e('.star').find('span').last().text().slice(0, -3)
     return movie
+}
+
+
+//缓存网页数据以便多次使用的时候不再重复下载
+var cached_url = function(url) {
+    //引入 fs 模块
+    var fa = require('fs')
+    //判断文件是否已存在，不存在就下载，已存在就读取
+    //定义一个文件名 path,用 url 后面部分来命名
+    var path = url.split('?')[1]+'.html'
+    // fs.statSync() 检查文件是否存在
+    var exists = fs.existsSync(path)
+    if (exists) {
+        //如果存在,就读取
+        var data = fa.readFileSync(path)
+        //返回 body
+        return data
+    } else {
+        //引入用于下载网页的 request 库，和用于解析网页数据的 cherrio 库
+        var request = require('sync-request')
+        // cherrio 语法类似于 jQuery
+        //var cheerio = require('cheerio')
+        //套路，用'GET'方法获取 URL 的内容，相当于在浏览器中输入 url 获得的内容
+        //r 相当于发送一个 http 请求后返回的对象
+        var r = request('GET', url)
+        //用 request 库的 getBody 方法得到 http请求的 body(也就是整个html)
+        //也就是 http 请求结果的 Response，参数是指定编码
+        var body = r.getBody('utf-8')
+        //把下载的内容写入缓存文件
+        fs.writeFileSync(path, body)
+        //返回 body
+        return body
+    }
 }
 
 
 //下载和解析网页数据的函数
 var moviesFromUrl = function(url) {
-    //引入用于下载网页的 request 库，和用于解析网页数据的 cherrio 库
-    var request = require('sync-request')
-    // cherrio 语法类似于 jQuery
-    //var cheerio = require('cheerio')
-    //套路，用'GET'方法获取 URL 的内容，相当于在浏览器中输入 url 获得的内容
-    //r 相当于发送一个 http 请求后返回的对象
-    var r = request('GET', url)
-    //用 request 库的 getBody 方法得到 http请求的 body(也就是整个html)
-    //也就是 http 请求结果的 Response，参数是指定编码
-    var body = r.getBody('utf-8')
+    //把数据缓存起来
+    var body = cached_url(url)
+
     //用 cheerio 库的 load 方法把 下载的 html 解析成可操作的 DOM
     var e = cheerio.load(body)
     //可以用选择器语法操作 cherrio.load 返回的 e 对象
